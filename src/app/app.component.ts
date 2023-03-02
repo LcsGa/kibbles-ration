@@ -75,7 +75,6 @@ export class AppComponent {
   constructor(private readonly fb: FormBuilder) {
     this.updateSplittings$.subscribe();
     this.updateSplittingsState$.subscribe();
-    addEventListener('dblclick', () => console.log(this.formGroup));
   }
 
   private get splittingControl(): FormControl<number> {
