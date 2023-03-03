@@ -1,11 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ForModule } from '@rx-angular/template/for';
+import { IfModule } from '@rx-angular/template/if';
+import { PushModule } from '@rx-angular/template/push';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { MessagesModule } from 'primeng/messages';
 import { TableModule } from 'primeng/table';
-import { ignoreElements, map, pairwise, startWith, tap } from 'rxjs';
+import { map, pairwise, startWith, tap } from 'rxjs';
+import { TotalPipe } from './shared/pipes/total.pipe';
 
 interface DailyQuantityGroup {
   quantity: FormControl<number>;
@@ -15,18 +20,33 @@ interface DailyQuantityGroup {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ButtonModule, CheckboxModule, CommonModule, InputNumberModule, ReactiveFormsModule, TableModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ButtonModule,
+    CheckboxModule,
+    CommonModule,
+    ForModule,
+    IfModule,
+    InputNumberModule,
+    MessagesModule,
+    PushModule,
+    ReactiveFormsModule,
+    TableModule,
+    TotalPipe,
+  ],
 })
 export class AppComponent {
   protected readonly formGroup = this.fb.nonNullable.group({
     splittingCount: [1, Validators.required],
-    customDistribution: [false],
     splittings: this.fb.array([this.splittingControl]),
     dailyQuantities: this.fb.array([this.dailyQuantityGroup]),
   });
+
+  protected readonly displaySplittings$ = this.formGroup.controls.splittingCount.valueChanges.pipe(
+    map((splittingCount) => splittingCount > 1)
+  );
 
   private readonly updateSplittings$ = this.formGroup.controls.splittingCount.valueChanges.pipe(
     startWith(this.formGroup.getRawValue().splittingCount),
@@ -38,15 +58,6 @@ export class AppComponent {
         this.formGroup.controls.splittings.removeAt(this.formGroup.getRawValue().splittingCount - 1);
       }
     })
-  );
-
-  private readonly updateSplittingsState$ = this.formGroup.controls.customDistribution.valueChanges.pipe(
-    startWith(this.formGroup.value.customDistribution),
-    tap((customDistribution) => {
-      this.formGroup.controls.splittings[customDistribution ? 'enable' : 'disable']();
-      this.formGroup.controls.splittings.controls.forEach((control) => control.setValue(1));
-    }),
-    ignoreElements()
   );
 
   protected readonly splittedDailyQuantities$ = this.formGroup.valueChanges.pipe(
@@ -61,10 +72,7 @@ export class AppComponent {
               ({ quantity, distribution }) =>
                 quantity! *
                 (distribution! / 100) *
-                (splittingAmount /
-                  this.formGroup
-                    .getRawValue()
-                    .splittings.reduce((total, splittingAmount) => total + splittingAmount, 0))
+                (splittingAmount / this.totalPipe.transform(this.formGroup.getRawValue().splittings))
             ),
           ],
           [] as number[][]
@@ -72,16 +80,19 @@ export class AppComponent {
     })
   );
 
-  constructor(private readonly fb: FormBuilder) {
+  protected readonly displayDailyQuantitiesDistributionError$ =
+    this.formGroup.controls.dailyQuantities.valueChanges.pipe(
+      map((dailyQuantities): number[] => dailyQuantities.map(({ distribution }) => distribution!)),
+      map(this.totalPipe.transform.bind(this)),
+      map((total) => total > 100)
+    );
+
+  constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe) {
     this.updateSplittings$.subscribe();
-    this.updateSplittingsState$.subscribe();
   }
 
   private get splittingControl(): FormControl<number> {
-    return this.fb.nonNullable.control(
-      { value: 1, disabled: !this.formGroup?.getRawValue().customDistribution ?? true },
-      { validators: Validators.required }
-    );
+    return this.fb.nonNullable.control(1, { validators: Validators.required });
   }
 
   private get dailyQuantityGroup(): FormGroup<DailyQuantityGroup> {
@@ -97,5 +108,9 @@ export class AppComponent {
 
   protected addDailyQuantity(): void {
     this.formGroup.controls.dailyQuantities.push(this.dailyQuantityGroup);
+  }
+
+  protected trackById(index: number): number {
+    return index;
   }
 }

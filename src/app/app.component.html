@@ -4,38 +4,29 @@
 
 <main class="p-4">
   <form class="flex flex-col gap-12" [formGroup]="formGroup">
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center gap-4">
-        <label for="splittingCount">Fractionner en</label>
+    <div class="flex items-center gap-4">
+      <label for="splittingCount">Fractionner en</label>
 
-        <p-inputNumber
-          inputId="splittingCount"
-          [min]="1"
-          [max]="12"
-          suffix=" fois"
-          [showButtons]="true"
-          buttonLayout="horizontal"
-          incrementButtonIcon="pi pi-plus"
-          decrementButtonIcon="pi pi-minus"
-          formControlName="splittingCount"
-        ></p-inputNumber>
-      </div>
-
-      <p-checkbox
-        *ngIf="formGroup.getRawValue().splittingCount > 1"
-        [binary]="true"
-        label="Répartition personnalisée"
-        formControlName="customDistribution"
-      ></p-checkbox>
+      <p-inputNumber
+        inputId="splittingCount"
+        [min]="1"
+        [max]="12"
+        suffix=" fois"
+        [showButtons]="true"
+        buttonLayout="horizontal"
+        incrementButtonIcon="pi pi-plus"
+        decrementButtonIcon="pi pi-minus"
+        formControlName="splittingCount"
+      ></p-inputNumber>
     </div>
 
-    <div>
-      <h2 class="underline mb-2">Fractionnement{{ formGroup.getRawValue().splittingCount > 1 ? "s" : "" }}</h2>
+    <div *rxIf="displaySplittings$">
+      <h2 class="underline mb-2">Fractionnements</h2>
 
       <div class="flex flex-col gap-4">
         <div
           class="flex items-center gap-4"
-          *ngFor="let splittingControl of formGroup.controls.splittings.controls; let i = index"
+          *rxFor="let splittingControl of formGroup.controls.splittings.controls; let i = index; trackBy: trackById"
         >
           <label [for]="'splitting-' + i">{{ i + 1 }}.</label>
 
@@ -43,6 +34,7 @@
             [inputId]="'splitting-' + i"
             [min]="1"
             [max]="10"
+            [suffix]="' /' + (formGroup.getRawValue().splittings | total)"
             [showButtons]="true"
             buttonLayout="horizontal"
             incrementButtonIcon="pi pi-plus"
@@ -57,9 +49,15 @@
       <h2 class="underline mb-2">Quantité{{ formGroup.controls.dailyQuantities.length > 1 ? "s" : "" }} journalière</h2>
 
       <div class="flex flex-col gap-4">
+        <!-- FIXME rxFor is not working properly with 'last' here -->
         <div
           class="flex items-center gap-4"
-          *ngFor="let dailyQuantityGroup of formGroup.controls.dailyQuantities.controls; let i = index; let last = last"
+          *ngFor="
+            let dailyQuantityGroup of formGroup.controls.dailyQuantities.controls;
+            let i = index;
+            let last = last;
+            trackBy: trackById
+          "
           [formGroup]="dailyQuantityGroup"
         >
           <label [for]="'daily-quantity-' + i">{{ i + 1 }}.</label>
@@ -70,7 +68,7 @@
               [min]="1"
               [max]="1000"
               [step]="5"
-              suffix=" gr"
+              suffix=" g"
               [showButtons]="true"
               buttonLayout="horizontal"
               incrementButtonIcon="pi pi-plus"
@@ -97,27 +95,35 @@
             *ngIf="formGroup.controls.dailyQuantities.length > 1"
             styleClass="p-button-outlined p-button-rounded p-button-text p-button-danger"
             icon="pi pi-trash"
-            (onClick)="removeDailyQuantityAt(i)"
+            (click)="removeDailyQuantityAt(i)"
           ></p-button>
 
           <p-button
             *ngIf="last"
             styleClass="p-button-outlined p-button-rounded p-button-text"
             icon="pi pi-plus"
-            (onClick)="addDailyQuantity()"
+            (click)="addDailyQuantity()"
           ></p-button>
         </div>
       </div>
+
+      <p-messages *rxIf="displayDailyQuantitiesDistributionError$" severity="warn">
+        <ng-template pTemplate>
+          <p>La répartition de croquettes dépasse 100%</p>
+        </ng-template>
+      </p-messages>
     </div>
 
-    <p-table [value]="(splittedDailyQuantities$ | async)!">
+    <p-table [value]="(splittedDailyQuantities$ | async)!" [rowTrackBy]="trackById">
       <ng-template pTemplate="caption">Résultats</ng-template>
 
       <ng-template pTemplate="header">
         <tr>
           <th></th>
 
-          <th *ngFor="let dailyQuantity of formGroup.getRawValue().dailyQuantities; let i = index">Qté. {{ i + 1 }}</th>
+          <th *rxFor="let dailyQuantity of formGroup.getRawValue().dailyQuantities; let i = index; trackBy: trackById">
+            Qté. {{ i + 1 }}
+          </th>
         </tr>
       </ng-template>
 
@@ -125,8 +131,8 @@
         <tr>
           <td>{{ rowIndex + 1 }}.</td>
 
-          <td *ngFor="let splittedDailyQuantity of splittedDailyQuantities">
-            {{ splittedDailyQuantity | number : "1.0-1" }} gr
+          <td *rxFor="let splittedDailyQuantity of splittedDailyQuantities; trackBy: trackById">
+            {{ splittedDailyQuantity | number : "1.0-1" }} g
           </td>
         </tr>
       </ng-template>
