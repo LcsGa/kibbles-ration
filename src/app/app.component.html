@@ -49,14 +49,14 @@
       <h2 class="underline mb-2">Quantité{{ formGroup.controls.dailyQuantities.length > 1 ? "s" : "" }} journalière</h2>
 
       <div class="flex flex-col gap-4">
-        <!-- FIXME rxFor is not working properly with 'last' here -->
         <div
           class="flex items-center gap-4"
-          *ngFor="
+          *rxFor="
             let group of formGroup.controls.dailyQuantities.controls;
             let i = index;
             let last = last;
-            trackBy: trackById
+            trackBy: trackById;
+            strategy: 'native'
           "
           [formGroup]="group"
         >
