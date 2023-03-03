@@ -62,21 +62,17 @@ export class AppComponent {
 
   protected readonly splittedDailyQuantities$ = this.formGroup.valueChanges.pipe(
     startWith(this.formGroup.getRawValue()),
-    map(({ dailyQuantities }) => {
-      return this.formGroup.controls.splittings
-        .getRawValue()
-        .reduce(
-          (acc, splittingAmount) => [
-            ...acc,
-            dailyQuantities!.map(
-              ({ quantity, distribution }) =>
-                quantity! *
-                (distribution! / 100) *
-                (splittingAmount / this.totalPipe.transform(this.formGroup.getRawValue().splittings))
-            ),
-          ],
-          [] as number[][]
-        );
+    map(({ splittings, dailyQuantities }) => {
+      return splittings!.reduce(
+        (acc, splittingAmount) => [
+          ...acc,
+          dailyQuantities!.map(
+            ({ quantity, distribution }) =>
+              quantity! * (distribution! / 100) * (splittingAmount / this.totalPipe.transform(splittings!))
+          ),
+        ],
+        [] as number[][]
+      );
     })
   );
 
@@ -95,19 +91,11 @@ export class AppComponent {
     return this.fb.nonNullable.control(1, { validators: Validators.required });
   }
 
-  private get dailyQuantityGroup(): FormGroup<DailyQuantityGroup> {
+  protected get dailyQuantityGroup(): FormGroup<DailyQuantityGroup> {
     return this.fb.nonNullable.group({
       quantity: this.fb.nonNullable.control(100, { validators: Validators.required }),
       distribution: this.fb.nonNullable.control(100, { validators: Validators.required }),
     });
-  }
-
-  protected removeDailyQuantityAt(index: number): void {
-    this.formGroup.controls.dailyQuantities.removeAt(index);
-  }
-
-  protected addDailyQuantity(): void {
-    this.formGroup.controls.dailyQuantities.push(this.dailyQuantityGroup);
   }
 
   protected trackById(index: number): number {

@@ -26,7 +26,7 @@
       <div class="flex flex-col gap-4">
         <div
           class="flex items-center gap-4"
-          *rxFor="let splittingControl of formGroup.controls.splittings.controls; let i = index; trackBy: trackById"
+          *rxFor="let control of formGroup.controls.splittings.controls; let i = index; trackBy: trackById"
         >
           <label [for]="'splitting-' + i">{{ i + 1 }}.</label>
 
@@ -39,7 +39,7 @@
             buttonLayout="horizontal"
             incrementButtonIcon="pi pi-plus"
             decrementButtonIcon="pi pi-minus"
-            [formControl]="splittingControl"
+            [formControl]="control"
           ></p-inputNumber>
         </div>
       </div>
@@ -53,12 +53,12 @@
         <div
           class="flex items-center gap-4"
           *ngFor="
-            let dailyQuantityGroup of formGroup.controls.dailyQuantities.controls;
+            let group of formGroup.controls.dailyQuantities.controls;
             let i = index;
             let last = last;
             trackBy: trackById
           "
-          [formGroup]="dailyQuantityGroup"
+          [formGroup]="group"
         >
           <label [for]="'daily-quantity-' + i">{{ i + 1 }}.</label>
 
@@ -95,14 +95,14 @@
             *ngIf="formGroup.controls.dailyQuantities.length > 1"
             styleClass="p-button-outlined p-button-rounded p-button-text p-button-danger"
             icon="pi pi-trash"
-            (click)="removeDailyQuantityAt(i)"
+            (click)="formGroup.controls.dailyQuantities.removeAt(i)"
           ></p-button>
 
           <p-button
             *ngIf="last"
             styleClass="p-button-outlined p-button-rounded p-button-text"
             icon="pi pi-plus"
-            (click)="addDailyQuantity()"
+            (click)="formGroup.controls.dailyQuantities.push(dailyQuantityGroup)"
           ></p-button>
         </div>
       </div>
