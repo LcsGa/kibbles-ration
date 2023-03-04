@@ -9,7 +9,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessagesModule } from 'primeng/messages';
 import { TableModule } from 'primeng/table';
-import { defer, map, pairwise, startWith, tap } from 'rxjs';
+import { map, pairwise, range, startWith, switchMap, tap } from 'rxjs';
 import { TotalPipe } from './shared/pipes/total.pipe';
 import { FormRawValue } from './shared/types/form.type';
 
@@ -17,6 +17,8 @@ interface DailyQuantityGroup {
   quantity: FormControl<number>;
   distribution: FormControl<number>;
 }
+
+type DailyQuantity = FormRawValue<FormGroup<DailyQuantityGroup>>;
 
 interface KribbleRationGroup {
   splittingCount: FormControl<number>;
@@ -49,92 +51,117 @@ type KribbleRation = FormRawValue<FormGroup<KribbleRationGroup>>;
 export class AppComponent {
   private readonly FORM_KEY = 'form';
 
-  protected readonly formGroup = this.fb.nonNullable.group<KribbleRationGroup>({
-    splittingCount: this.fb.nonNullable.control(1, Validators.required),
-    splittings: this.fb.array([this.splittingControl]),
-    dailyQuantities: this.fb.array([this.dailyQuantityGroup]),
-  });
+  private readonly DEFAULT_KRIBBLE_RATION: KribbleRation = {
+    splittingCount: 1,
+    splittings: [1],
+    dailyQuantities: [{ quantity: 100, distribution: 100 }],
+  };
+
+  protected readonly formGroup = this.createInitialFormGroup();
 
   private readonly saveConfig$ = this.formGroup.valueChanges.pipe(
     map((formValues) => JSON.stringify(formValues)),
     tap((formValuesJSON) => localStorage.setItem(this.FORM_KEY, formValuesJSON))
   );
 
-  protected readonly displaySplittings$ = defer(() =>
-    this.formGroup.controls.splittingCount.valueChanges.pipe(
-      startWith(this.formGroup.getRawValue().splittingCount),
-      map((splittingCount) => splittingCount > 1)
-    )
+  protected readonly displaySplittings$ = this.formGroup.controls.splittingCount.valueChanges.pipe(
+    startWith(this.formGroup.getRawValue().splittingCount),
+    map((splittingCount) => splittingCount > 1)
   );
 
   private readonly updateSplittings$ = this.formGroup.controls.splittingCount.valueChanges.pipe(
     startWith(this.formGroup.getRawValue().splittingCount),
     pairwise(),
-    tap(([prevCount, currCount]) => {
-      if (currCount > prevCount) {
-        this.formGroup.controls.splittings.push(this.splittingControl);
-      } else {
-        this.formGroup.controls.splittings.removeAt(this.formGroup.getRawValue().splittingCount - 1);
-      }
-    })
-  );
-
-  protected readonly splittedDailyQuantities$ = defer(() =>
-    this.formGroup.valueChanges.pipe(
-      startWith(this.formGroup.getRawValue()),
-      map(({ splittings, dailyQuantities }) => {
-        return splittings!.reduce(
-          (acc, splittingAmount) => [
-            ...acc,
-            dailyQuantities!.map(
-              ({ quantity, distribution }) =>
-                quantity! * (distribution! / 100) * (splittingAmount / this.totalPipe.transform(splittings!))
-            ),
-          ],
-          [] as number[][]
-        );
-      })
+    switchMap(([prevCount, currCount]) =>
+      range(Math.abs(currCount - prevCount)).pipe(
+        tap(() => {
+          if (currCount > prevCount) {
+            this.formGroup.controls.splittings.push(this.createSplittingControl(1));
+          } else {
+            this.formGroup.controls.splittings.removeAt(currCount - 1);
+          }
+        })
+      )
     )
   );
 
-  protected readonly displayDailyQuantitiesDistributionError$ = defer(() =>
+  protected readonly splittedDailyQuantities$ = this.formGroup.valueChanges.pipe(
+    startWith(this.formGroup.getRawValue()),
+    map(({ splittings, dailyQuantities }) => {
+      return splittings!.reduce(
+        (acc, splittingAmount) => [
+          ...acc,
+          dailyQuantities!.map(
+            ({ quantity, distribution }) =>
+              quantity! * (distribution! / 100) * (splittingAmount / this.totalPipe.transform(splittings!))
+          ),
+        ],
+        [] as number[][]
+      );
+    })
+  );
+
+  protected readonly displayDailyQuantitiesDistributionError$ =
     this.formGroup.controls.dailyQuantities.valueChanges.pipe(
       startWith(this.formGroup.getRawValue().dailyQuantities),
       map((dailyQuantities): number[] => dailyQuantities.map(({ distribution }) => distribution!)),
       map(this.totalPipe.transform.bind(this)),
       map((total) => total > 100)
-    )
+    );
+
+  protected readonly displayResetButton$ = this.formGroup.valueChanges.pipe(
+    startWith(this.formGroup.getRawValue()),
+    map((formGroup) => JSON.stringify(formGroup) !== JSON.stringify(this.DEFAULT_KRIBBLE_RATION))
   );
 
   constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe) {
-    this.initStoredConfig();
     this.saveConfig$.subscribe();
     this.updateSplittings$.subscribe();
   }
 
-  private get splittingControl(): FormControl<number> {
-    return this.fb.nonNullable.control(1, { validators: Validators.required });
-  }
+  private createInitialFormGroup(): FormGroup<KribbleRationGroup> {
+    const { splittingCount, splittings, dailyQuantities } = JSON.parse(
+      localStorage.getItem(this.FORM_KEY) ?? JSON.stringify(this.DEFAULT_KRIBBLE_RATION)
+    ) as KribbleRation;
 
-  protected get dailyQuantityGroup(): FormGroup<DailyQuantityGroup> {
-    return this.fb.nonNullable.group({
-      quantity: this.fb.nonNullable.control(100, { validators: Validators.required }),
-      distribution: this.fb.nonNullable.control(100, { validators: Validators.required }),
+    return this.fb.nonNullable.group<KribbleRationGroup>({
+      splittingCount: this.fb.nonNullable.control(splittingCount ?? 1, Validators.required),
+      splittings: this.fb.array(splittings.map(this.createSplittingControl.bind(this))),
+      dailyQuantities: this.fb.array(dailyQuantities.map(this.createDailyQuantityGroup.bind(this))),
     });
   }
 
-  private initStoredConfig(): void {
-    const storedForm = localStorage.getItem(this.FORM_KEY);
-    if (storedForm) {
-      const formValues: KribbleRation = JSON.parse(storedForm);
-      const {
-        splittings: [, ...splittings],
-        dailyQuantities: [, ...dailyQuantities],
-      } = formValues;
-      splittings.forEach(() => this.formGroup.controls.splittings.push(this.splittingControl));
-      dailyQuantities.forEach(() => this.formGroup.controls.dailyQuantities.push(this.dailyQuantityGroup));
-      this.formGroup.patchValue(formValues, { emitEvent: false });
-    }
+  // formGroup.reset({ ... }) not working with formArrays
+  protected resetFormGroup(): void {
+    this.formGroup.controls.splittingCount.setValue(1);
+
+    [this.formGroup.controls.splittings, this.formGroup.controls.dailyQuantities].forEach((control) =>
+      control.clear({ emitEvent: false })
+    );
+
+    this.formGroup.controls.splittings.push(this.createSplittingControl());
+    this.formGroup.controls.dailyQuantities.push(this.createDailyQuantityGroup());
+  }
+
+  private createSplittingControl(splitting: number = this.DEFAULT_KRIBBLE_RATION.splittings[0]): FormControl<number> {
+    return this.fb.nonNullable.control(splitting, { validators: Validators.required });
+  }
+
+  protected createDailyQuantityGroup(
+    { quantity, distribution }: DailyQuantity = this.DEFAULT_KRIBBLE_RATION.dailyQuantities[0]
+  ): FormGroup<DailyQuantityGroup> {
+    return this.fb.nonNullable.group({
+      quantity: this.fb.nonNullable.control(quantity, { validators: Validators.required }),
+      distribution: this.fb.nonNullable.control(distribution, { validators: Validators.required }),
+    });
+  }
+
+  protected removeDailyQuantityAt(index: number): void {
+    this.formGroup.controls.dailyQuantities.removeAt(index);
+  }
+
+  protected addDailyQuantity(): void {
+    this.formGroup.controls.dailyQuantities.push(this.createDailyQuantityGroup());
   }
 
   protected trackById(index: number): number {

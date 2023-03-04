@@ -1,5 +1,7 @@
-<header class="p-4">
+<header class="flex justify-between items-center p-4">
   <h1 class="text-3xl font-bold">Ration de croquettes</h1>
+
+  <p-button *rxIf="displayResetButton$" icon="pi pi-refresh" (click)="resetFormGroup()"></p-button>
 </header>
 
 <main class="p-4">
@@ -95,14 +97,14 @@
             *ngIf="formGroup.controls.dailyQuantities.length > 1"
             styleClass="p-button-outlined p-button-rounded p-button-text p-button-danger"
             icon="pi pi-trash"
-            (click)="formGroup.controls.dailyQuantities.removeAt(i)"
+            (click)="removeDailyQuantityAt(i)"
           ></p-button>
 
           <p-button
             *ngIf="last"
             styleClass="p-button-outlined p-button-rounded p-button-text"
             icon="pi pi-plus"
-            (click)="formGroup.controls.dailyQuantities.push(dailyQuantityGroup)"
+            (click)="addDailyQuantity()"
           ></p-button>
         </div>
       </div>
@@ -114,7 +116,7 @@
       </p-messages>
     </div>
 
-    <p-table [value]="(splittedDailyQuantities$ | async)!" [rowTrackBy]="trackById">
+    <p-table [value]="splittedDailyQuantities$ | push" [rowTrackBy]="trackById">
       <ng-template pTemplate="caption">Résultats</ng-template>
 
       <ng-template pTemplate="header">
