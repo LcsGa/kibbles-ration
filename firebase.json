@@ -1,7 +1,11 @@
 {
   "hosting": {
-    "public": "dist/kribble-ration",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "public": "dist/kibbles-ration",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
       {
         "source": "**",

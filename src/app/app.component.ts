@@ -20,13 +20,13 @@ interface DailyQuantityGroup {
 
 type DailyQuantity = FormRawValue<FormGroup<DailyQuantityGroup>>;
 
-interface KribbleRationGroup {
+interface KibblesRationGroup {
   splittingCount: FormControl<number>;
   splittings: FormArray<FormControl<number>>;
   dailyQuantities: FormArray<FormGroup<DailyQuantityGroup>>;
 }
 
-type KribbleRation = FormRawValue<FormGroup<KribbleRationGroup>>;
+type KibblesRation = FormRawValue<FormGroup<KibblesRationGroup>>;
 
 @Component({
   selector: 'app-root',
@@ -51,7 +51,7 @@ type KribbleRation = FormRawValue<FormGroup<KribbleRationGroup>>;
 export class AppComponent {
   private readonly FORM_KEY = 'form';
 
-  private readonly DEFAULT_KRIBBLE_RATION: KribbleRation = {
+  private readonly DEFAULT_KIBBLES_RATION: KibblesRation = {
     splittingCount: 1,
     splittings: [1],
     dailyQuantities: [{ quantity: 100, distribution: 100 }],
@@ -113,7 +113,7 @@ export class AppComponent {
 
   protected readonly displayResetButton$ = this.formGroup.valueChanges.pipe(
     startWith(this.formGroup.getRawValue()),
-    map((formGroup) => JSON.stringify(formGroup) !== JSON.stringify(this.DEFAULT_KRIBBLE_RATION))
+    map((formGroup) => JSON.stringify(formGroup) !== JSON.stringify(this.DEFAULT_KIBBLES_RATION))
   );
 
   constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe) {
@@ -121,12 +121,12 @@ export class AppComponent {
     this.updateSplittings$.subscribe();
   }
 
-  private createInitialFormGroup(): FormGroup<KribbleRationGroup> {
+  private createInitialFormGroup(): FormGroup<KibblesRationGroup> {
     const { splittingCount, splittings, dailyQuantities } = JSON.parse(
-      localStorage.getItem(this.FORM_KEY) ?? JSON.stringify(this.DEFAULT_KRIBBLE_RATION)
-    ) as KribbleRation;
+      localStorage.getItem(this.FORM_KEY) ?? JSON.stringify(this.DEFAULT_KIBBLES_RATION)
+    ) as KibblesRation;
 
-    return this.fb.nonNullable.group<KribbleRationGroup>({
+    return this.fb.nonNullable.group<KibblesRationGroup>({
       splittingCount: this.fb.nonNullable.control(splittingCount ?? 1, Validators.required),
       splittings: this.fb.array(splittings.map(this.createSplittingControl.bind(this))),
       dailyQuantities: this.fb.array(dailyQuantities.map(this.createDailyQuantityGroup.bind(this))),
@@ -145,12 +145,12 @@ export class AppComponent {
     this.formGroup.controls.dailyQuantities.push(this.createDailyQuantityGroup());
   }
 
-  private createSplittingControl(splitting: number = this.DEFAULT_KRIBBLE_RATION.splittings[0]): FormControl<number> {
+  private createSplittingControl(splitting: number = this.DEFAULT_KIBBLES_RATION.splittings[0]): FormControl<number> {
     return this.fb.nonNullable.control(splitting, { validators: Validators.required });
   }
 
   protected createDailyQuantityGroup(
-    { quantity, distribution }: DailyQuantity = this.DEFAULT_KRIBBLE_RATION.dailyQuantities[0]
+    { quantity, distribution }: DailyQuantity = this.DEFAULT_KIBBLES_RATION.dailyQuantities[0]
   ): FormGroup<DailyQuantityGroup> {
     return this.fb.nonNullable.group({
       quantity: this.fb.nonNullable.control(quantity, { validators: Validators.required }),
