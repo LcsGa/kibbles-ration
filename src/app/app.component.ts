@@ -9,7 +9,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessagesModule } from 'primeng/messages';
 import { TableModule } from 'primeng/table';
-import { map, pairwise, range, startWith, switchMap, tap } from 'rxjs';
+import { concatMap, ignoreElements, map, pairwise, range, startWith, tap } from 'rxjs';
 import { TotalPipe } from './shared/pipes/total.pipe';
 import { FormRawValue } from './shared/types/form.type';
 
@@ -59,9 +59,10 @@ export class AppComponent {
 
   protected readonly formGroup = this.createInitialFormGroup();
 
-  private readonly saveConfig$ = this.formGroup.valueChanges.pipe(
+  private readonly saveFormValues$ = this.formGroup.valueChanges.pipe(
     map((formValues) => JSON.stringify(formValues)),
-    tap((formValuesJSON) => localStorage.setItem(this.FORM_KEY, formValuesJSON))
+    tap((formValuesJSON) => localStorage.setItem(this.FORM_KEY, formValuesJSON)),
+    ignoreElements()
   );
 
   protected readonly displaySplittings$ = this.formGroup.controls.splittingCount.valueChanges.pipe(
@@ -72,7 +73,7 @@ export class AppComponent {
   private readonly updateSplittings$ = this.formGroup.controls.splittingCount.valueChanges.pipe(
     startWith(this.formGroup.getRawValue().splittingCount),
     pairwise(),
-    switchMap(([prevCount, currCount]) =>
+    concatMap(([prevCount, currCount]) =>
       range(Math.abs(currCount - prevCount)).pipe(
         tap(() => {
           if (currCount > prevCount) {
@@ -82,7 +83,8 @@ export class AppComponent {
           }
         })
       )
-    )
+    ),
+    ignoreElements()
   );
 
   protected readonly splittedDailyQuantities$ = this.formGroup.valueChanges.pipe(
@@ -115,7 +117,7 @@ export class AppComponent {
   );
 
   constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe) {
-    this.saveConfig$.subscribe();
+    this.saveFormValues$.subscribe();
     this.updateSplittings$.subscribe();
   }
 
