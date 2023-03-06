@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ForModule } from '@rx-angular/template/for';
@@ -9,7 +9,19 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessagesModule } from 'primeng/messages';
 import { TableModule } from 'primeng/table';
-import { concatMap, ignoreElements, map, pairwise, range, startWith, tap } from 'rxjs';
+import {
+  concatMap,
+  distinctUntilChanged,
+  filter,
+  ignoreElements,
+  map,
+  merge,
+  pairwise,
+  range,
+  startWith,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { TotalPipe } from './shared/pipes/total.pipe';
 import { FormRawValue } from './shared/types/form.type';
 
@@ -37,7 +49,7 @@ type KibblesRation = FormRawValue<FormGroup<KibblesRationGroup>>;
   imports: [
     ButtonModule,
     CheckboxModule,
-    CommonModule,
+    DecimalPipe,
     ForModule,
     IfModule,
     InputNumberModule,
@@ -111,6 +123,21 @@ export class AppComponent {
       map((total) => total > 100)
     );
 
+  private readonly updateDailyQuantitiesDistribution$ = this.formGroup.controls.dailyQuantities.valueChanges.pipe(
+    map(({ length }) => length),
+    startWith(this.formGroup.getRawValue().dailyQuantities.length),
+    distinctUntilChanged(),
+    filter((length) => length === 2),
+    map(() => this.formGroup.controls.dailyQuantities.controls.map(({ controls }) => controls.distribution)),
+    switchMap(([distribution1, distribution2]) =>
+      merge(
+        distribution1.valueChanges.pipe(tap((value) => distribution2.setValue(100 - value, { emitEvent: false }))),
+        distribution2.valueChanges.pipe(tap((value) => distribution1.setValue(100 - value, { emitEvent: false })))
+      )
+    ),
+    ignoreElements()
+  );
+
   protected readonly displayResetButton$ = this.formGroup.valueChanges.pipe(
     startWith(this.formGroup.getRawValue()),
     map((formGroup) => JSON.stringify(formGroup) !== JSON.stringify(this.DEFAULT_KIBBLES_RATION))
@@ -119,6 +146,7 @@ export class AppComponent {
   constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe) {
     this.saveFormValues$.subscribe();
     this.updateSplittings$.subscribe();
+    this.updateDailyQuantitiesDistribution$.subscribe();
   }
 
   private createInitialFormGroup(): FormGroup<KibblesRationGroup> {
@@ -164,9 +192,14 @@ export class AppComponent {
 
   protected addDailyQuantity(): void {
     this.formGroup.controls.dailyQuantities.push(this.createDailyQuantityGroup());
+    if (this.formGroup.controls.dailyQuantities.length === 2) {
+      this.formGroup.controls.dailyQuantities.controls[1].controls.distribution.setValue(
+        100 - this.formGroup.getRawValue().dailyQuantities[0].distribution
+      );
+    }
   }
 
-  protected trackById(index: number): number {
+  protected trackByIndex(index: number): number {
     return index;
   }
 }

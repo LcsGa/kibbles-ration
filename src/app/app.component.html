@@ -28,7 +28,7 @@
       <div class="flex flex-col gap-4">
         <div
           class="flex items-center gap-4"
-          *rxFor="let control of formGroup.controls.splittings.controls; let i = index; trackBy: trackById"
+          *rxFor="let control of formGroup.controls.splittings.controls; let i = index; trackBy: trackByIndex"
         >
           <label [for]="'splitting-' + i">{{ i + 1 }}.</label>
 
@@ -57,7 +57,7 @@
             let group of formGroup.controls.dailyQuantities.controls;
             let i = index;
             let last = last;
-            trackBy: trackById;
+            trackBy: trackByIndex;
             strategy: 'native'
           "
           [formGroup]="group"
@@ -94,14 +94,14 @@
           </div>
 
           <p-button
-            *ngIf="formGroup.controls.dailyQuantities.length > 1"
+            *rxIf="formGroup.controls.dailyQuantities.length > 1"
             styleClass="p-button-outlined p-button-rounded p-button-text p-button-danger"
             icon="pi pi-trash"
             (click)="removeDailyQuantityAt(i)"
           ></p-button>
 
           <p-button
-            *ngIf="last"
+            *rxIf="last"
             styleClass="p-button-outlined p-button-rounded p-button-text"
             icon="pi pi-plus"
             (click)="addDailyQuantity()"
@@ -116,14 +116,16 @@
       </p-messages>
     </div>
 
-    <p-table [value]="splittedDailyQuantities$ | push" [rowTrackBy]="trackById">
+    <p-table [value]="splittedDailyQuantities$ | push" [rowTrackBy]="trackByIndex">
       <ng-template pTemplate="caption">Résultats</ng-template>
 
       <ng-template pTemplate="header">
         <tr>
           <th></th>
 
-          <th *rxFor="let dailyQuantity of formGroup.getRawValue().dailyQuantities; let i = index; trackBy: trackById">
+          <th
+            *rxFor="let dailyQuantity of formGroup.getRawValue().dailyQuantities; let i = index; trackBy: trackByIndex"
+          >
             Qté. {{ i + 1 }}
           </th>
         </tr>
@@ -133,7 +135,7 @@
         <tr>
           <td>{{ rowIndex + 1 }}.</td>
 
-          <td *rxFor="let splittedDailyQuantity of splittedDailyQuantities; trackBy: trackById">
+          <td *rxFor="let splittedDailyQuantity of splittedDailyQuantities; trackBy: trackByIndex">
             {{ splittedDailyQuantity | number : "1.0-1" }} g
           </td>
         </tr>
