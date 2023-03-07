@@ -4,6 +4,7 @@ import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Va
 import { ForModule } from '@rx-angular/template/for';
 import { IfModule } from '@rx-angular/template/if';
 import { PushModule } from '@rx-angular/template/push';
+import { RxEffects } from '@rx-angular/state/effects';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -59,6 +60,7 @@ type KibblesRation = FormRawValue<FormGroup<KibblesRationGroup>>;
     TableModule,
     TotalPipe,
   ],
+  providers: [RxEffects],
 })
 export class AppComponent {
   private readonly FORM_KEY = 'form';
@@ -143,10 +145,10 @@ export class AppComponent {
     map((formGroup) => JSON.stringify(formGroup) !== JSON.stringify(this.DEFAULT_KIBBLES_RATION))
   );
 
-  constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe) {
-    this.saveFormValues$.subscribe();
-    this.updateSplittings$.subscribe();
-    this.updateDailyQuantitiesDistribution$.subscribe();
+  constructor(private readonly fb: FormBuilder, private readonly totalPipe: TotalPipe, effects: RxEffects) {
+    effects.register(this.saveFormValues$);
+    effects.register(this.updateSplittings$);
+    effects.register(this.updateDailyQuantitiesDistribution$);
   }
 
   private createInitialFormGroup(): FormGroup<KibblesRationGroup> {

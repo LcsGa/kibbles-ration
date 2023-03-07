@@ -56,9 +56,8 @@
           *rxFor="
             let group of formGroup.controls.dailyQuantities.controls;
             let i = index;
-            let last = last;
-            trackBy: trackByIndex;
-            strategy: 'native'
+            let last$ = last$;
+            trackBy: trackByIndex
           "
           [formGroup]="group"
         >
@@ -101,7 +100,7 @@
           ></p-button>
 
           <p-button
-            *rxIf="last"
+            *rxIf="last$"
             styleClass="p-button-outlined p-button-rounded p-button-text"
             icon="pi pi-plus"
             (click)="addDailyQuantity()"
