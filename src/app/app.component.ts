@@ -1,10 +1,10 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ForModule } from '@rx-angular/template/for';
-import { IfModule } from '@rx-angular/template/if';
-import { PushModule } from '@rx-angular/template/push';
 import { RxEffects } from '@rx-angular/state/effects';
+import { RxFor } from '@rx-angular/template/for';
+import { RxIf } from '@rx-angular/template/if';
+import { PushPipe } from '@rx-angular/template/push';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -51,11 +51,11 @@ type KibblesRation = FormRawValue<FormGroup<KibblesRationGroup>>;
     ButtonModule,
     CheckboxModule,
     DecimalPipe,
-    ForModule,
-    IfModule,
+    RxFor,
+    RxIf,
     InputNumberModule,
     MessagesModule,
-    PushModule,
+    PushPipe,
     ReactiveFormsModule,
     TableModule,
     TotalPipe,
