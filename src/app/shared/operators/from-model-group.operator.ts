@@ -5,4 +5,7 @@ import { Observable, startWith } from 'rxjs';
 export const fromModelGroup = <T>(
   modelGroupSelector: () => NgModelGroup,
   { initialValue }: { initialValue: T }
-): Observable<T> => fromChildOutput(() => modelGroupSelector().control, 'valueChanges').pipe(startWith(initialValue));
+): Observable<T> => {
+  console.log('modelGroup', modelGroupSelector());
+  return fromChildOutput(() => modelGroupSelector()?.control, 'valueChanges').pipe(startWith(initialValue));
+};

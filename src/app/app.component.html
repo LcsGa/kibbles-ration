@@ -1,70 +1,73 @@
 <header class="flex justify-between items-center p-4">
   <h1 class="text-3xl font-bold">Ration de croquettes</h1>
 
-  <p-button *rxIf="displayResetButton$" icon="pi pi-refresh" (click)="resetFormGroup()"></p-button>
+  <!-- <p-button *rxIf="displayResetButton$" icon="pi pi-refresh" (click)="resetFormGroup()"></p-button> -->
 </header>
 
-<main class="p-4">
-  <form class="flex flex-col gap-12" [formGroup]="formGroup">
-    <div class="flex items-center gap-4">
-      <label for="splittingCount">Fractionner en</label>
+<form class="p-4 flex flex-col gap-12">
+  <div class="flex items-center gap-4">
+    <label for="splittingCount">Fractionner en</label>
 
-      <p-inputNumber
-        inputId="splittingCount"
-        [min]="1"
-        [max]="12"
-        suffix=" fois"
-        [showButtons]="true"
-        buttonLayout="horizontal"
-        incrementButtonIcon="pi pi-plus"
-        decrementButtonIcon="pi pi-minus"
-        formControlName="splittingCount"
-      ></p-inputNumber>
-    </div>
+    <p-inputNumber
+      #splittingCount
+      inputId="splittingCount"
+      name="splittingCount"
+      [min]="1"
+      [max]="12"
+      suffix=" fois"
+      [showButtons]="true"
+      buttonLayout="horizontal"
+      incrementButtonIcon="pi pi-plus"
+      decrementButtonIcon="pi pi-minus"
+      [ngModel]="splittingCount$ | push"
+    ></p-inputNumber>
+  </div>
 
-    <div *rxIf="displaySplittings$">
-      <h2 class="underline mb-2">Fractionnements</h2>
+  <div *rxIf="displaySplittings$">
+    <h2 class="underline mb-2">Fractionnements</h2>
 
-      <div class="flex flex-col gap-4">
-        <div
-          class="flex items-center gap-4"
-          *rxFor="let control of formGroup.controls.splittings.controls; let i = index; trackBy: trackByIndex"
-        >
-          <label [for]="'splitting-' + i">{{ i + 1 }}.</label>
+    <div #splittings class="flex flex-col gap-4" ngModelGroup="splittings$" *rxLet="splittings$; let splittings">
+      <div
+        class="flex items-center gap-4"
+        *rxFor="let x of splittingsForLoopUtil$; let i = index; trackBy: trackByIndex"
+      >
+        <label [for]="'splitting-' + i">{{ i + 1 }}.</label>
 
-          <p-inputNumber
-            [inputId]="'splitting-' + i"
-            [min]="1"
-            [max]="10"
-            [suffix]="' /' + (formGroup.getRawValue().splittings | total)"
-            [showButtons]="true"
-            buttonLayout="horizontal"
-            incrementButtonIcon="pi pi-plus"
-            decrementButtonIcon="pi pi-minus"
-            [formControl]="control"
-          ></p-inputNumber>
-        </div>
+        <p-inputNumber
+          [inputId]="'splitting-' + i"
+          name="{{ i }}"
+          [min]="1"
+          [max]="10"
+          [showButtons]="true"
+          buttonLayout="horizontal"
+          incrementButtonIcon="pi pi-plus"
+          decrementButtonIcon="pi pi-minus"
+          [ngModel]="splittings[i]"
+        ></p-inputNumber>
+
+        {{ splittings$ | push | json }}
       </div>
     </div>
+  </div>
 
-    <div>
-      <h2 class="underline mb-2">Quantité{{ formGroup.controls.dailyQuantities.length > 1 ? "s" : "" }} journalière</h2>
+  <!-- <div>
+    <h2 class="underline mb-2">Quantité{{ kibblesRation.dailyQuantities.length > 1 ? "s" : "" }} journalière</h2>
 
-      <div class="flex flex-col gap-4">
-        <div
-          class="flex items-center gap-4"
-          *rxFor="
-            let group of formGroup.controls.dailyQuantities.controls;
+    <div class="flex flex-col gap-4">
+      <div
+      class="flex items-center gap-4"
+      *rxFor="
+      let dailyQuantity of kibblesRation.dailyQuantities;
             let i = index;
             let last$ = last$;
             trackBy: trackByIndex
-          "
-          [formGroup]="group"
-        >
-          <label [for]="'daily-quantity-' + i">{{ i + 1 }}.</label>
+            "
+            ngModelGroup="dailyQuantity"
+            >
+            <label [for]="'daily-quantity-' + i">{{ i + 1 }}.</label>
 
-          <div class="flex flex-col gap-2">
-            <p-inputNumber
+            <div class="flex flex-col gap-2">
+              <p-inputNumber
               [inputId]="'daily-quantity-' + i"
               [min]="1"
               [max]="1000"
@@ -74,36 +77,36 @@
               buttonLayout="horizontal"
               incrementButtonIcon="pi pi-plus"
               decrementButtonIcon="pi pi-minus"
-              formControlName="quantity"
-            ></p-inputNumber>
+              [ngModel]="dailyQuantity.quantity"
+              ></p-inputNumber>
 
-            <div class="flex items-center gap-4">
-              <label [for]="'distribution-' + i">Répartition</label>
+              <div class="flex items-center gap-4">
+                <label [for]="'distribution-' + i">Répartition</label>
 
-              <p-inputNumber
+                <p-inputNumber
                 class="distribution"
                 [inputId]="'distribution-' + i"
                 [min]="0"
                 [max]="100"
                 [step]="10"
                 suffix=" %"
-                formControlName="distribution"
-              ></p-inputNumber>
+                [ngModel]="dailyQuantity.distribution"
+                ></p-inputNumber>
             </div>
           </div>
 
           <p-button
-            *rxIf="formGroup.controls.dailyQuantities.length > 1"
-            styleClass="p-button-outlined p-button-rounded p-button-text p-button-danger"
-            icon="pi pi-trash"
-            (click)="removeDailyQuantityAt(i)"
+          *rxIf="formGroup.controls.dailyQuantities.length > 1"
+          styleClass="p-button-outlined p-button-rounded p-button-text p-button-danger"
+          icon="pi pi-trash"
+          (click)="removeDailyQuantityAt(i)"
           ></p-button>
 
           <p-button
-            *rxIf="last$"
-            styleClass="p-button-outlined p-button-rounded p-button-text"
-            icon="pi pi-plus"
-            (click)="addDailyQuantity()"
+          *rxIf="last$"
+          styleClass="p-button-outlined p-button-rounded p-button-text"
+          icon="pi pi-plus"
+          (click)="addDailyQuantity()"
           ></p-button>
         </div>
       </div>
@@ -113,18 +116,16 @@
           <p>La répartition de croquettes dépasse 100%</p>
         </ng-template>
       </p-messages>
-    </div>
+    </div> -->
 
-    <p-table [value]="splittedDailyQuantities$ | push" [rowTrackBy]="trackByIndex">
+  <!-- <p-table [value]="splittedDailyQuantities$ | push" [rowTrackBy]="trackByIndex">
       <ng-template pTemplate="caption">Résultats</ng-template>
 
       <ng-template pTemplate="header">
         <tr>
           <th></th>
 
-          <th
-            *rxFor="let dailyQuantity of formGroup.getRawValue().dailyQuantities; let i = index; trackBy: trackByIndex"
-          >
+          <th *rxFor="let dailyQuantity of kibblesRation.dailyQuantities; let i = index; trackBy: trackByIndex">
             Qté. {{ i + 1 }}
           </th>
         </tr>
@@ -139,6 +140,7 @@
           </td>
         </tr>
       </ng-template>
-    </p-table>
-  </form>
-</main>
+    </p-table> -->
+</form>
+
+{{ kibblesRation$ | push | json }}
