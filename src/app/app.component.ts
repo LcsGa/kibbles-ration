@@ -33,12 +33,14 @@ import {
   merge,
   pairwise,
   range,
+  shareReplay,
   startWith,
   switchMap,
+  take,
   tap,
   withLatestFrom,
 } from 'rxjs';
-import { fromModel, fromModelGroup } from './shared/operators';
+import { fromModel, fromModelGroup, fromModelGroupArray } from './shared/operators';
 import { TotalPipe } from './shared/pipes';
 import { FormRawValue } from './shared/types';
 
@@ -116,22 +118,30 @@ export class AppComponent {
   private readonly splittingCount!: NgModel;
   protected readonly splittingCount$ = fromModel(() => this.splittingCount, {
     initialValue: this.DEFAULT_KIBBLES_RATION.splittingCount,
-  });
-
-  protected readonly splittingsForLoopUtil$ = this.splittingCount$.pipe(
-    map((count) => (count === 1 ? 2 : count)),
-    map((count) => new Array(count).fill(1))
-  );
+  }).pipe(map(Number) /* FIXME => remap to original types */);
 
   @ViewChild('splittings', { read: NgModelGroup })
   private readonly splittings!: NgModelGroup;
-  protected readonly splittings$ = fromModelGroup(() => this.splittings, {
-    initialValue: this.DEFAULT_KIBBLES_RATION.splittings,
-  }).pipe(map((splittings) => Object.values(splittings)));
+  protected readonly splittings$ = this.splittingCount$.pipe(
+    // take(1), // FIXME => responsible for the reset ! => use combineLatest instead?
+    switchMap((count) =>
+      fromModelGroupArray(() => this.splittings, {
+        initialValue: new Array(count).fill(this.DEFAULT_KIBBLES_RATION.splittings[0]), // FIXME => should be fixed at the same time as the buildNotifier + FIXME => shouldn't reset the values !!
+        buildNotifier: this.splittingCount$, // FIXME => should build only once here
+      })
+    )
+  );
+
+  @ViewChild('dailyQuantities', { read: NgModelGroup })
+  private readonly dailyQuantities!: NgModelGroup;
+  protected readonly dailyQuantities$ = fromModelGroupArray(() => this.dailyQuantities, {
+    initialValue: this.DEFAULT_KIBBLES_RATION.dailyQuantities,
+  });
 
   protected readonly kibblesRation$ = combineLatest({
     splittingCount: this.splittingCount$,
     splittings: this.splittings$,
+    dailyQuantities: this.dailyQuantities$,
   });
 
   protected readonly formGroup = this.createInitialFormGroup();

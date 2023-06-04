@@ -1,11 +1,13 @@
 import { NgModelGroup } from '@angular/forms';
 import { fromChildOutput } from '@lcsga/ng-operators';
-import { Observable, startWith } from 'rxjs';
+import { Observable, ObservableInput, shareReplay, startWith } from 'rxjs';
 
 export const fromModelGroup = <T>(
   modelGroupSelector: () => NgModelGroup,
-  { initialValue }: { initialValue: T }
+  { initialValue, buildNotifier }: { initialValue: T; buildNotifier?: ObservableInput<any> /* FIXME */ }
 ): Observable<T> => {
-  console.log('modelGroup', modelGroupSelector());
-  return fromChildOutput(() => modelGroupSelector()?.control, 'valueChanges').pipe(startWith(initialValue));
+  return fromChildOutput(() => modelGroupSelector()?.control, 'valueChanges', { buildNotifier }).pipe(
+    startWith(initialValue),
+    shareReplay(1)
+  );
 };
