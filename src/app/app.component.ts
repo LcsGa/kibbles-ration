@@ -23,8 +23,8 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import { TotalPipe } from './shared/pipes/total.pipe';
-import { FormRawValue } from './shared/types/form.type';
+import { TotalPipe } from './shared/pipes';
+import { FormRawValue } from './shared/types';
 
 interface DailyQuantityGroup {
   quantity: FormControl<number>;

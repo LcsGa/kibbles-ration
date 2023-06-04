@@ -30,13 +30,13 @@
           class="flex items-center gap-4"
           *rxFor="let control of formGroup.controls.splittings.controls; let i = index; trackBy: trackByIndex"
         >
-          <label [for]="'splitting-' + i">{{ i + 1 }}.</label>
+          <label for="splitting-{{ i }}">{{ i + 1 }}.</label>
 
           <p-inputNumber
-            [inputId]="'splitting-' + i"
+            inputId="splitting-{{ i }}"
             [min]="1"
             [max]="10"
-            [suffix]="' /' + (formGroup.getRawValue().splittings | total)"
+            suffix=" /{{ formGroup.getRawValue().splittings | total }}"
             [showButtons]="true"
             buttonLayout="horizontal"
             incrementButtonIcon="pi pi-plus"
@@ -61,11 +61,11 @@
           "
           [formGroup]="group"
         >
-          <label [for]="'daily-quantity-' + i">{{ i + 1 }}.</label>
+          <label for="daily-quantity-{{ i }}">{{ i + 1 }}.</label>
 
           <div class="flex flex-col gap-2">
             <p-inputNumber
-              [inputId]="'daily-quantity-' + i"
+              inputId="daily-quantity-{{ i }}"
               [min]="1"
               [max]="1000"
               [step]="5"
@@ -78,11 +78,11 @@
             ></p-inputNumber>
 
             <div class="flex items-center gap-4">
-              <label [for]="'distribution-' + i">Répartition</label>
+              <label for="distribution-{{ i }}">Répartition</label>
 
               <p-inputNumber
                 class="distribution"
-                [inputId]="'distribution-' + i"
+                inputId="distribution-{{ i }}"
                 [min]="0"
                 [max]="100"
                 [step]="10"
